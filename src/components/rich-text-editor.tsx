@@ -36,7 +36,7 @@ export function RichTextEditor({
 
   useEffect(() => {
     if (editor && editor.getHTML() !== value) {
-      editor.commands.setContent(value || "<p></p>", { emitUpdate: false });
+      editor.commands.setContent(value || "<p></p>", false);
     }
   }, [editor, value]);
 
