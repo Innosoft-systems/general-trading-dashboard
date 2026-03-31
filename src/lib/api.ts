@@ -5,7 +5,7 @@ const runtime = globalThis as typeof globalThis & {
 };
 
 const API_BASE =
-  runtime.process?.env?.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api";
+  runtime.process?.env?.NEXT_PUBLIC_API_BASE_URL ?? "https://api.general-trading.uztravelagency.uz/api";
 
 async function request<T>(
   path: string,
