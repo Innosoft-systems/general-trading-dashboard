@@ -1,0 +1,47 @@
+{
+  "extends": "../packages/tsconfig/base.json",
+  "compilerOptions": {
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es2022"
+    ],
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ],
+      "@uztour/config": [
+        "../packages/config/src/index.ts"
+      ],
+      "@uztour/types": [
+        "../packages/types/src/index.ts"
+      ],
+      "@uztour/utils": [
+        "../packages/utils/src/index.ts"
+      ],
+      "@uztour/ui": [
+        "../packages/ui/src/index.ts"
+      ]
+    },
+    "allowJs": true,
+    "noEmit": true,
+    "isolatedModules": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

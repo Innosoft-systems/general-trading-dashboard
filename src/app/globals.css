@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-slate-100 text-ink antialiased;
+}
+
+.dashboard-shell {
+  @apply mx-auto flex min-h-screen w-full max-w-[1600px] overflow-x-hidden;
+}
