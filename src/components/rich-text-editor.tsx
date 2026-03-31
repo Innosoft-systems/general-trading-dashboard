@@ -9,6 +9,132 @@ import { useEffect } from "react";
 const buttonClass =
   "rounded-xl border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700";
 
+function wrapNode(documentRef: Document, node: Node, tagName: string) {
+  const wrapper = documentRef.createElement(tagName);
+  wrapper.appendChild(node);
+  return wrapper;
+}
+
+function normalizeWordNode(documentRef: Document, node: Node): Node | null {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return documentRef.createTextNode(node.textContent ?? "");
+  }
+
+  if (node.nodeType !== Node.ELEMENT_NODE) {
+    return null;
+  }
+
+  const element = node as HTMLElement;
+  const tag = element.tagName.toLowerCase();
+
+  if (["style", "script", "meta", "link", "xml:o", "o:p"].includes(tag)) {
+    return null;
+  }
+
+  const children = Array.from(element.childNodes)
+    .map((child) => normalizeWordNode(documentRef, child))
+    .filter((child): child is Node => child !== null);
+
+  const style = (element.getAttribute("style") ?? "").toLowerCase();
+  const isBold =
+    tag === "strong" ||
+    tag === "b" ||
+    /font-weight\s*:\s*(bold|700|800|900)/.test(style);
+  const isItalic =
+    tag === "em" || tag === "i" || /font-style\s*:\s*italic/.test(style);
+  const isUnderline =
+    tag === "u" || /text-decoration[^;]*underline/.test(style);
+
+  let baseNode: Node;
+
+  if (tag === "br") {
+    baseNode = documentRef.createElement("br");
+  } else if (
+    [
+      "p",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      "ul",
+      "ol",
+      "li",
+      "blockquote",
+    ].includes(tag)
+  ) {
+    const nextElement = documentRef.createElement(tag);
+    children.forEach((child) => nextElement.appendChild(child));
+    baseNode = nextElement;
+  } else if (tag === "a") {
+    const anchor = documentRef.createElement("a");
+    const href = element.getAttribute("href");
+    if (href) {
+      anchor.setAttribute("href", href);
+      anchor.setAttribute("target", "_blank");
+      anchor.setAttribute("rel", "noopener noreferrer");
+    }
+    children.forEach((child) => anchor.appendChild(child));
+    baseNode = anchor;
+  } else if (tag === "div") {
+    const paragraph = documentRef.createElement("p");
+    children.forEach((child) => paragraph.appendChild(child));
+    baseNode = paragraph;
+  } else {
+    const fragment = documentRef.createDocumentFragment();
+    children.forEach((child) => fragment.appendChild(child));
+    baseNode = fragment;
+  }
+
+  if (
+    isBold &&
+    !(
+      baseNode instanceof HTMLElement &&
+      baseNode.tagName.toLowerCase() === "strong"
+    )
+  ) {
+    baseNode = wrapNode(documentRef, baseNode, "strong");
+  }
+
+  if (
+    isItalic &&
+    !(
+      baseNode instanceof HTMLElement && baseNode.tagName.toLowerCase() === "em"
+    )
+  ) {
+    baseNode = wrapNode(documentRef, baseNode, "em");
+  }
+
+  if (
+    isUnderline &&
+    !(baseNode instanceof HTMLElement && baseNode.tagName.toLowerCase() === "u")
+  ) {
+    baseNode = wrapNode(documentRef, baseNode, "u");
+  }
+
+  return baseNode;
+}
+
+function normalizePastedHtml(html: string) {
+  if (typeof window === "undefined" || !html) {
+    return html;
+  }
+
+  const parser = new DOMParser();
+  const parsed = parser.parseFromString(html, "text/html");
+  const container = parsed.createElement("div");
+
+  Array.from(parsed.body.childNodes).forEach((node) => {
+    const normalized = normalizeWordNode(parsed, node);
+    if (normalized) {
+      container.appendChild(normalized);
+    }
+  });
+
+  return container.innerHTML || html;
+}
+
 export function RichTextEditor({
   value,
   onChange,
@@ -28,6 +154,7 @@ export function RichTextEditor({
         class:
           "min-h-[220px] rounded-b-2xl border border-t-0 border-slate-300 bg-white px-4 py-3 outline-none prose prose-slate max-w-none",
       },
+      transformPastedHTML: (html: string) => normalizePastedHtml(html),
     },
     onUpdate: ({ editor: current }: { editor: { getHTML: () => string } }) => {
       onChange(current.getHTML());
